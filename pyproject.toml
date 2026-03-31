@@ -1,0 +1,13 @@
+[project]
+name = "youtrip-review"
+version = "0.1.0"
+description = "Generate developer contribution reports from GitHub, JIRA, and git"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+youtrip-review = "youtrip_review.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
