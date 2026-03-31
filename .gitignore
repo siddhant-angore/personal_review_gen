@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+.venv/
+
+# uv
+uv.lock
+
+# Output
+review_output/
+
+# Config with real credentials
+youtrip_review_config.toml
+
+# OS
+.DS_Store
