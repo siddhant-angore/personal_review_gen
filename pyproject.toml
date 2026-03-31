@@ -1,0 +1,16 @@
+[project]
+name = "fetch-review-stats"
+version = "0.1.0"
+description = "Generate developer contribution reports from GitHub & JIRA"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+fetch-review-stats = "fetch_review_stats.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["fetch_review_stats"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,0 +1,18 @@
+# Your review configuration
+# Fill in your details below, then run:  uv run fetch-review-stats
+
+[github]
+username = ""                                  # your GitHub username
+repos    = ["owner/repo1", "owner/repo2"]      # list of owner/repo to review
+
+[jira]
+username         = ""                          # your JIRA email (e.g. name@company.com)
+base_url         = "https://your-org.atlassian.net"
+exclude_projects = ["TEST"]                    # JIRA projects to ignore
+
+[period]
+start = "2025-04-01"                           # any start date (YYYY-MM-DD)
+end   = "2026-03-31"                           # any end date (YYYY-MM-DD)
+
+[output]
+dir = "./review_output"                        # where to write CSVs and markdown
