@@ -1,4 +1,4 @@
-"""Generate the year-end review markdown document."""
+"""Generate the contribution review markdown document."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from collections import Counter, defaultdict
 from datetime import date as _date
 from pathlib import Path
 
-from .models import JIRA_CATEGORY_MAP, JIRA_DONE_STATUSES, JiraTicket, PullRequest, ReviewData, UserConfig
+from .models import JIRA_BUG_CATEGORY, JIRA_CATEGORY_MAP, JIRA_DONE_STATUSES, JiraTicket, PullRequest, ReviewData, UserConfig
 
 
 def _fmt(n: int) -> str:
@@ -75,7 +75,7 @@ def generate_markdown(data: ReviewData, config: UserConfig) -> str:
 
     # --- Key Stats ---
     done_count = sum(1 for t in tickets if t.status in JIRA_DONE_STATUSES)
-    bug_prs = [pr for pr in prs if pr.category == "Bug Fix"]
+    bug_prs = [pr for pr in prs if pr.category == JIRA_BUG_CATEGORY]
     total_add = sum(pr.additions for pr in prs)
     total_del = sum(pr.deletions for pr in prs)
 
@@ -92,7 +92,7 @@ def generate_markdown(data: ReviewData, config: UserConfig) -> str:
         w(f"| **Commits** | {_fmt(stats.total_commits)} |")
     w(f"| **JIRA Tickets** | {_fmt(len(tickets))} |")
     w(f"| **JIRA Completed (Done/Closed)** | {_fmt(done_count)} |")
-    w(f"| **Bug Fix PRs** | {len(bug_prs)} |")
+    w(f"| **{JIRA_BUG_CATEGORY} PRs** | {len(bug_prs)} |")
     if stats.package_file_changes:
         w(f"| **Packages Touched** | {len(stats.package_file_changes)} |")
     review_ratio = round(review_count / len(prs), 2) if review_count > 0 and prs else None

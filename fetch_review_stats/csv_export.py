@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-from .models import JIRA_DONE_STATUSES, GitStats, JiraTicket, PullRequest, RepoStats, UserConfig
+from .models import JIRA_BUG_CATEGORY, JIRA_DONE_STATUSES, GitStats, JiraTicket, PullRequest, RepoStats, UserConfig
 
 
 def _prefix(config: UserConfig) -> str:
@@ -79,13 +79,13 @@ def export_summary(
 ) -> Path:
     path = Path(config.output_dir) / f"summary_{_prefix(config)}.csv"
     done_count = sum(1 for t in tickets if t.status in JIRA_DONE_STATUSES)
-    bug_prs = sum(1 for pr in prs if pr.category == "Bug Fix")
+    bug_prs = sum(1 for pr in prs if pr.category == JIRA_BUG_CATEGORY)
     with path.open("w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow([
             "Repo", "GitHub Username", "Period Start", "Period End",
             "PRs Merged", "PRs Reviewed", "Lines Added", "Lines Deleted", "Net Lines",
-            "Commits", "JIRA Tickets", "JIRA Completed", "Bug Fix PRs", "Packages Touched",
+            "Commits", "JIRA Tickets", "JIRA Completed", "Bug Fixes PRs", "Packages Touched",
         ])
         # Per-repo rows
         for rs in per_repo_stats:

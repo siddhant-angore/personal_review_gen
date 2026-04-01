@@ -19,6 +19,9 @@ JIRA_CATEGORY_MAP: dict[str, str] = {
 
 JIRA_DONE_STATUSES = frozenset({"Done", "Closed"})
 
+# Which category name from JIRA_CATEGORY_MAP represents bug fixes
+JIRA_BUG_CATEGORY = "Bug Fixes"
+
 
 @dataclass
 class PullRequest:
