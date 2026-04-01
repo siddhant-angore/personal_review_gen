@@ -10,7 +10,7 @@ from .models import JIRA_BUG_CATEGORY, JIRA_DONE_STATUSES, GitStats, JiraTicket,
 
 def _prefix(config: UserConfig) -> str:
     """Date-range prefix for output filenames."""
-    return f"{config.start_date.isoformat()}_to_{config.end_date.isoformat()}"
+    return f"{config.github_username}_{config.start_date.isoformat()}_to_{config.end_date.isoformat()}"
 
 
 def export_prs(prs: list[PullRequest], config: UserConfig) -> Path:
