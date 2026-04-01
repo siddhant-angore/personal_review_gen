@@ -8,6 +8,7 @@ from collections import defaultdict
 from datetime import date, timedelta
 
 from .models import GitStats, PullRequest, RepoStats, ReviewData, UserConfig
+from .ui import Spinner, header, status, status_error
 
 
 def _run_gh(args: list[str], timeout: int = 60) -> str:
@@ -31,7 +32,7 @@ def check_gh_auth() -> bool:
 
 
 def fetch_merged_prs(
-    username: str, repo: str, start: date, end: date, *, progress: bool = True,
+    username: str, repo: str, start: date, end: date,
 ) -> list[PullRequest]:
     """Fetch all merged PRs authored by the user in the date range."""
     prs: list[PullRequest] = []
@@ -67,8 +68,6 @@ def fetch_merged_prs(
             )
             data = json.loads(detail_json)
             prs.append(PullRequest.from_gh_json(data, repo=repo))
-            if progress:
-                print(".", end="", flush=True)
 
         if len(pr_numbers) < per_page:
             break
@@ -99,7 +98,7 @@ def fetch_review_count(
 
 
 def fetch_commit_stats(
-    username: str, repo: str, start: date, end: date, *, progress: bool = True,
+    username: str, repo: str, start: date, end: date,
 ) -> dict[str, int]:
     """Fetch commit dates and return monthly commit counts.
 
@@ -123,13 +122,8 @@ def fetch_commit_stats(
     if result:
         for line in result.splitlines():
             if line.strip():
-                # "2025-04-15T10:30:00Z" -> "2025-04"
                 month = line.strip()[:7]
                 monthly[month] += 1
-
-    if progress:
-        total = sum(monthly.values())
-        print(f" {total} commits", end="", flush=True)
 
     return dict(monthly)
 
@@ -138,7 +132,7 @@ def fetch_commit_stats(
 
 
 def fetch_pr_file_changes(
-    repo: str, pr_numbers: list[int], *, progress: bool = True,
+    repo: str, pr_numbers: list[int],
 ) -> dict[str, int]:
     """Fetch changed files for each PR and group by top-level package.
 
@@ -157,19 +151,16 @@ def fetch_pr_file_changes(
             continue
 
         if result:
-            for filepath in result.splitlines():
-                filepath = filepath.strip()
-                if not filepath:
+            for fpath in result.splitlines():
+                fpath = fpath.strip()
+                if not fpath:
                     continue
-                segments = filepath.split("/")
+                segments = fpath.split("/")
                 if len(segments) >= 2:
                     group = f"{segments[0]}/{segments[1]}"
                 else:
                     group = segments[0]
                 pkg_counts[group] += 1
-
-        if progress:
-            print(".", end="", flush=True)
 
     return dict(sorted(pkg_counts.items(), key=lambda x: -x[1]))
 
@@ -222,46 +213,46 @@ def fetch_all_repos(
     end = config.end_date
 
     for repo in config.github_repos:
-        print(f"\n  [{repo}]")
+        print(header(repo))
 
         # PRs
-        print("    PRs", end="", flush=True)
         try:
-            repo_prs = fetch_merged_prs(username, repo, start, end)
+            with Spinner("Fetching PRs..."):
+                repo_prs = fetch_merged_prs(username, repo, start, end)
+            print(status("PRs authored", len(repo_prs)))
         except Exception as e:
-            print(f" error: {e}")
+            print(status_error("PRs authored", str(e)))
             repo_prs = []
-        print(f" {len(repo_prs)} found.")
 
         # Reviews
-        print("    Reviews...", end="", flush=True)
         try:
-            reviewed = fetch_review_count(username, repo, start, end)
+            with Spinner("Fetching reviews..."):
+                reviewed = fetch_review_count(username, repo, start, end)
+            print(status("PRs reviewed", reviewed))
         except Exception as e:
-            print(f" error: {e}")
+            print(status_error("PRs reviewed", str(e)))
             reviewed = 0
-        print(f" {reviewed}")
 
         # Commits
-        print("    Commits...", end="", flush=True)
         try:
-            monthly_commits = fetch_commit_stats(username, repo, start, end)
+            with Spinner("Fetching commits..."):
+                monthly_commits = fetch_commit_stats(username, repo, start, end)
+            print(status("Commits", sum(monthly_commits.values())))
         except Exception as e:
-            print(f" error: {e}")
+            print(status_error("Commits", str(e)))
             monthly_commits = {}
-        print()
 
         # File changes (optional)
         pkg_changes: dict[str, int] = {}
         if not skip_file_changes and repo_prs:
-            print("    File changes", end="", flush=True)
             try:
-                pkg_changes = fetch_pr_file_changes(
-                    repo, [pr.number for pr in repo_prs],
-                )
+                with Spinner("Fetching file changes..."):
+                    pkg_changes = fetch_pr_file_changes(
+                        repo, [pr.number for pr in repo_prs],
+                    )
+                print(status("File changes", "done"))
             except Exception as e:
-                print(f" error: {e}")
-            print(f" done.")
+                print(status_error("File changes", str(e)))
 
         # Accumulate
         all_prs.extend(repo_prs)

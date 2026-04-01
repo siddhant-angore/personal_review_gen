@@ -9,6 +9,7 @@ from datetime import date
 from pathlib import Path
 
 from .models import UserConfig
+from .ui import bold, error, purple, success, warn
 
 # config.toml lives next to this file inside the package
 _PACKAGE_DIR = Path(__file__).parent
@@ -22,8 +23,8 @@ def _ensure_config_exists() -> Path:
     if _LOCAL_CONFIG.exists():
         return _LOCAL_CONFIG
     shutil.copy(_BUNDLED_CONFIG, _LOCAL_CONFIG)
-    print(f"\n  Created {_LOCAL_CONFIG}")
-    print("  Fill in your details and re-run:  uv run fetch-review-stats\n")
+    print(f"\n{success('Created')} {purple(str(_LOCAL_CONFIG))}")
+    print(f"  Fill in your details and re-run: {bold('uv run fetch-review-stats')}\n")
     sys.exit(0)
 
 
@@ -32,7 +33,7 @@ def load_config(config_path: str | None = None) -> UserConfig:
     path = Path(config_path) if config_path else _ensure_config_exists()
 
     if not path.exists():
-        print(f"  Config file not found: {path}")
+        print(error(f"Config file not found: {purple(str(path))}"))
         sys.exit(1)
 
     with path.open("rb") as f:
@@ -47,9 +48,7 @@ def load_config(config_path: str | None = None) -> UserConfig:
     repos = gh.get("repos", [])
     if not repos and gh.get("repo"):
         repos = [gh["repo"]]
-        print(
-            f"  Note: config uses deprecated 'github.repo'. Update to 'github.repos = [\"{gh['repo']}\"]'"
-        )
+        print(warn(f"Config uses deprecated 'github.repo'. Update to 'github.repos = [\"{gh['repo']}\"]'"))
 
     # Validate required fields
     missing = []
@@ -63,8 +62,8 @@ def load_config(config_path: str | None = None) -> UserConfig:
         missing.append("period.end")
 
     if missing:
-        print(f"  Missing required config fields: {', '.join(missing)}")
-        print(f"  Edit {path} and fill them in.")
+        print(error(f"Missing required config fields: {', '.join(missing)}"))
+        print(f"  Edit {purple(str(path))} and fill them in.")
         sys.exit(1)
 
     output_dir = str(Path(output.get("dir", "./review_output")).resolve())

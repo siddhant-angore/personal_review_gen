@@ -7,6 +7,7 @@ import io
 import subprocess
 
 from .models import JiraTicket, UserConfig
+from .ui import status
 
 
 def _run_acli(args: list[str], timeout: int = 120) -> str:
@@ -31,11 +32,8 @@ def check_acli_auth() -> bool:
         return False
 
 
-def fetch_tickets(config: UserConfig, *, progress: bool = True) -> list[JiraTicket]:
+def fetch_tickets(config: UserConfig) -> list[JiraTicket]:
     """Fetch all JIRA tickets assigned to the user in the date range."""
-    if progress:
-        print("  Fetching JIRA tickets...", end="", flush=True)
-
     # Build exclude clause
     exclude_clause = ""
     if config.jira_exclude_projects:
@@ -65,9 +63,6 @@ def fetch_tickets(config: UserConfig, *, progress: bool = True) -> list[JiraTick
         timeout=120,
     )
 
-    if progress:
-        print(".", end="", flush=True)
-
     tickets: list[JiraTicket] = []
     reader = csv.DictReader(io.StringIO(csv_output))
     for row in reader:
@@ -81,9 +76,5 @@ def fetch_tickets(config: UserConfig, *, progress: bool = True) -> list[JiraTick
             )
         )
 
-    if progress:
-        print(f" {len(tickets)} tickets found.")
-
+    print(status("JIRA tickets", len(tickets), "found"))
     return tickets
-
-
