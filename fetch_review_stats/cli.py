@@ -1,4 +1,4 @@
-"""CLI entry point for YouTrip Review."""
+"""CLI entry point for fetch-review-stats."""
 
 from __future__ import annotations
 
@@ -8,30 +8,30 @@ from pathlib import Path
 
 from .config import load_config
 from .csv_export import export_all
-from .git_client import fetch_git_stats
-from .github_client import check_gh_auth, fetch_merged_prs, fetch_review_count
+from .github_client import check_gh_auth, fetch_all_repos
 from .jira_client import check_acli_auth, fetch_tickets
 from .markdown_gen import write_markdown
 from .models import ReviewData
 
 BANNER = r"""
   ┌──────────────────────────────────────┐
-  │   YouTrip Review                     │
+  │   Your company stats review          │
   │   Generate your contribution report  │
-  │   from GitHub, JIRA & git data.      │
+  │   from GitHub & JIRA                 │
   └──────────────────────────────────────┘
 """
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="youtrip-review",
+        prog="fetch-review-stats",
         description="Generate a contribution review document from GitHub and JIRA data.",
     )
     parser.add_argument(
-        "-c", "--config",
+        "-c",
+        "--config",
         default=None,
-        help="Path to config TOML file (default: ./youtrip_review_config.toml)",
+        help="Path to config TOML file (default: ./your_stats_review_config.toml)",
     )
     parser.add_argument(
         "--csv-only",
@@ -49,9 +49,9 @@ def main(argv: list[str] | None = None) -> int:
         help="Skip JIRA data fetching (useful if ACLI is not configured)",
     )
     parser.add_argument(
-        "--skip-git-stats",
+        "--skip-file-changes",
         action="store_true",
-        help="Skip local git log stats (useful when not in a git repo)",
+        help="Skip fetching per-PR file changes (faster, skips package breakdown)",
     )
     args = parser.parse_args(argv)
 
@@ -66,7 +66,9 @@ def main(argv: list[str] | None = None) -> int:
     if not check_gh_auth():
         issues.append("GitHub CLI (gh) not authenticated. Run: gh auth login")
     if not args.skip_jira and config.jira_username and not check_acli_auth():
-        issues.append("Atlassian CLI (acli) not authenticated. Run: acli jira auth login")
+        issues.append(
+            "Atlassian CLI (acli) not authenticated. Run: acli jira auth login"
+        )
 
     if issues:
         for issue in issues:
@@ -77,26 +79,14 @@ def main(argv: list[str] | None = None) -> int:
     Path(config.output_dir).mkdir(parents=True, exist_ok=True)
 
     print(f"  User:       @{config.github_username}")
-    print(f"  Repo:       {config.github_repo}")
+    print(f"  Repos:      {', '.join(config.github_repos)}")
     print(f"  Period:     {config.start_date} to {config.end_date}")
     print(f"  Output:     {config.output_dir}")
-    print()
 
-    # --- Fetch Data ---
-    data = ReviewData()
+    # --- Fetch GitHub data (all repos) ---
+    data = fetch_all_repos(config, skip_file_changes=args.skip_file_changes)
 
-    try:
-        data.prs_authored = fetch_merged_prs(config)
-    except Exception as e:
-        print(f"\n  Error fetching PRs: {e}")
-        data.prs_authored = []
-
-    try:
-        data.prs_reviewed_count = fetch_review_count(config)
-    except Exception as e:
-        print(f"\n  Error fetching review count: {e}")
-        data.prs_reviewed_count = 0
-
+    # --- Fetch JIRA data ---
     if not args.skip_jira and config.jira_username:
         try:
             data.jira_tickets = fetch_tickets(config)
@@ -104,17 +94,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"\n  Error fetching JIRA tickets: {e}")
             data.jira_tickets = []
     elif args.skip_jira:
-        print("  Skipping JIRA (--skip-jira)")
+        print("\n  Skipping JIRA (--skip-jira)")
     else:
-        print("  Skipping JIRA (no jira.username in config)")
-
-    if not args.skip_git_stats:
-        try:
-            data.git_stats = fetch_git_stats(config)
-        except Exception as e:
-            print(f"\n  Error fetching git stats: {e}")
-    else:
-        print("  Skipping git stats (--skip-git-stats)")
+        print("\n  Skipping JIRA (no jira.username in config)")
 
     # --- Export ---
     print()
@@ -126,6 +108,7 @@ def main(argv: list[str] | None = None) -> int:
             data.jira_tickets,
             data.git_stats,
             data.prs_reviewed_count,
+            data.per_repo_stats,
             config,
         )
         for p in csv_paths:
@@ -133,18 +116,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.csv_only:
         print("\n  Generating markdown report...")
-        md_path = write_markdown(
-            data.prs_authored,
-            data.jira_tickets,
-            data.git_stats,
-            data.prs_reviewed_count,
-            config,
-        )
+        md_path = write_markdown(data, config)
         print(f"    -> {md_path}")
 
     # --- Summary ---
     print(f"""
   ┌─ Summary ──────────────────────────────
+  │ Repositories:   {len(config.github_repos)}
   │ PRs Merged:     {len(data.prs_authored)}
   │ PRs Reviewed:   {data.prs_reviewed_count}
   │ JIRA Tickets:   {len(data.jira_tickets)}

@@ -1,6 +1,6 @@
-# YouTrip Review
+# Fetch Review Stats
 
-CLI tool that generates developer contribution reports by aggregating data from GitHub, JIRA, and local git history. Produces markdown reports and CSV exports covering PRs, code reviews, JIRA tickets, and commit statistics.
+CLI tool that generates developer contribution reports by aggregating data from GitHub and JIRA. Supports multiple repositories in a single run. Produces a consolidated markdown report and CSV exports covering PRs, code reviews, JIRA tickets, and commit statistics.
 
 ## Prerequisites
 
@@ -18,22 +18,25 @@ uv sync
 
 ## Configuration
 
-Copy the sample config and fill in your details:
+On first run, a config file is auto-created with placeholder values:
 
 ```bash
-cp youtrip_review/config.toml youtrip_review_config.toml
+uv run fetch-review-stats
+# Creates your_stats_review_config.toml — fill in your details and re-run
 ```
 
-Edit `youtrip_review_config.toml`:
+Or copy the sample config manually:
+
+```bash
+cp fetch_review_stats/config.toml your_stats_review_config.toml
+```
+
+Edit `your_stats_review_config.toml`:
 
 ```toml
 [github]
 username = "your-github-username"
-repo     = "owner/repo"
-
-[git]
-author_name = "Your Name"          # partial match for git log --author
-repo_path   = "/path/to/local/repo"
+repos    = ["owner/repo1", "owner/repo2"]    # all repos to include
 
 [jira]
 username         = "you@company.com"
@@ -51,23 +54,23 @@ dir = "./review_output"
 ## Usage
 
 ```bash
-# Full report (CSV + markdown)
-uv run youtrip-review
+# Full report (CSV + markdown) across all configured repos
+uv run fetch-review-stats
 
 # Use a custom config file
-uv run youtrip-review -c path/to/config.toml
+uv run fetch-review-stats -c path/to/config.toml
 
 # CSV export only
-uv run youtrip-review --csv-only
+uv run fetch-review-stats --csv-only
 
 # Markdown only (assumes CSVs already exist)
-uv run youtrip-review --markdown-only
+uv run fetch-review-stats --markdown-only
 
 # Skip JIRA data
-uv run youtrip-review --skip-jira
+uv run fetch-review-stats --skip-jira
 
-# Skip local git stats
-uv run youtrip-review --skip-git-stats
+# Skip per-PR file change analysis (faster)
+uv run fetch-review-stats --skip-file-changes
 ```
 
 ## Output
@@ -76,22 +79,32 @@ Reports are written to the configured output directory (default: `./review_outpu
 
 | File | Contents |
 |------|----------|
-| `review_*.md` | Full markdown report with stats, charts, and categorized contributions |
-| `prs_*.csv` | Pull request details (title, additions, deletions, merge date) |
+| `review_*.md` | Full markdown report with per-repo breakdown, stats, and categorized contributions |
+| `prs_*.csv` | Pull request details with repo, title, additions, deletions, merge date |
 | `jira_tickets_*.csv` | JIRA ticket information (type, status, priority) |
-| `git_stats_*.csv` | Monthly git commit and line change statistics |
-| `summary_*.csv` | Executive summary metrics |
+| `git_stats_*.csv` | Monthly commit and line change statistics |
+| `summary_*.csv` | Per-repo breakdown and totals |
+
+## How It Works
+
+1. Fetches merged PRs and review counts from GitHub API for each configured repo
+2. Fetches commit counts per repo via GitHub commits API
+3. Optionally fetches per-PR file changes for package-level analysis
+4. Fetches JIRA tickets (single query, not per-repo)
+5. Deduplicates PRs (by URL) and JIRA tickets (by key) across repos
+6. Generates consolidated CSV exports and markdown report
+
+No local repository clones are needed - all data is fetched via the GitHub and JIRA APIs.
 
 ## Project Structure
 
 ```
-youtrip_review/
+fetch_review_stats/
   cli.py           # CLI entry point and orchestration
-  config.py        # TOML configuration loading
+  config.py        # TOML configuration loading with auto-create
   models.py        # Data models (PullRequest, JiraTicket, GitStats, etc.)
-  github_client.py # GitHub API interactions via gh CLI
+  github_client.py # GitHub API: PRs, reviews, commits, file changes
   jira_client.py   # JIRA interactions via acli CLI
-  git_client.py    # Local git repository statistics
   markdown_gen.py  # Markdown report generation
   csv_export.py    # CSV file exporting
   config.toml      # Sample configuration template

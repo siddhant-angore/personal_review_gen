@@ -13,9 +13,11 @@ uv.lock
 
 # Output
 review_output/
+review_*/
+consolidated-review-*.md
 
 # Config with real credentials
-youtrip_review_config.toml
+your_stats_review_config.toml
 
 # OS
 .DS_Store

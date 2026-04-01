@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-from .models import GitStats, JiraTicket, PullRequest, UserConfig
+from .models import JIRA_DONE_STATUSES, GitStats, JiraTicket, PullRequest, RepoStats, UserConfig
 
 
 def _prefix(config: UserConfig) -> str:
@@ -18,11 +18,12 @@ def export_prs(prs: list[PullRequest], config: UserConfig) -> Path:
     with path.open("w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow([
-            "Number", "Title", "URL", "Created", "Merged",
+            "Repo", "Number", "Title", "URL", "Created", "Merged",
             "Additions", "Deletions", "Net", "Category", "JIRA Keys",
         ])
         for pr in prs:
             writer.writerow([
+                pr.repo,
                 pr.number,
                 pr.title,
                 pr.url,
@@ -73,31 +74,37 @@ def export_summary(
     tickets: list[JiraTicket],
     stats: GitStats,
     review_count: int,
+    per_repo_stats: list[RepoStats],
     config: UserConfig,
 ) -> Path:
     path = Path(config.output_dir) / f"summary_{_prefix(config)}.csv"
-    done_count = sum(1 for t in tickets if t.status in ("Done", "Closed"))
+    done_count = sum(1 for t in tickets if t.status in JIRA_DONE_STATUSES)
     bug_prs = sum(1 for pr in prs if pr.category == "Bug Fix")
     with path.open("w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow([
-            "GitHub Username", "Period Start", "Period End",
+            "Repo", "GitHub Username", "Period Start", "Period End",
             "PRs Merged", "PRs Reviewed", "Lines Added", "Lines Deleted", "Net Lines",
-            "JIRA Tickets", "JIRA Completed", "Bug Fix PRs", "Packages Touched",
+            "Commits", "JIRA Tickets", "JIRA Completed", "Bug Fix PRs", "Packages Touched",
         ])
+        # Per-repo rows
+        for rs in per_repo_stats:
+            writer.writerow([
+                rs.repo, config.github_username,
+                config.start_date.isoformat(), config.end_date.isoformat(),
+                rs.prs_merged, rs.prs_reviewed,
+                rs.additions, rs.deletions, rs.additions - rs.deletions,
+                rs.commits, "", "", "", "",
+            ])
+        # Totals row
         writer.writerow([
-            config.github_username,
-            config.start_date.isoformat(),
-            config.end_date.isoformat(),
-            len(prs),
-            review_count,
-            stats.total_additions,
-            stats.total_deletions,
+            "TOTAL", config.github_username,
+            config.start_date.isoformat(), config.end_date.isoformat(),
+            len(prs), review_count,
+            stats.total_additions, stats.total_deletions,
             stats.total_additions - stats.total_deletions,
-            len(tickets),
-            done_count,
-            bug_prs,
-            len(stats.package_file_changes),
+            stats.total_commits, len(tickets), done_count,
+            bug_prs, len(stats.package_file_changes),
         ])
     return path
 
@@ -107,6 +114,7 @@ def export_all(
     tickets: list[JiraTicket],
     stats: GitStats,
     review_count: int,
+    per_repo_stats: list[RepoStats],
     config: UserConfig,
 ) -> list[Path]:
     """Export all data to CSV files."""
@@ -115,5 +123,5 @@ def export_all(
         export_prs(prs, config),
         export_jira_tickets(tickets, config),
         export_git_stats(stats, config),
-        export_summary(prs, tickets, stats, review_count, config),
+        export_summary(prs, tickets, stats, review_count, per_repo_stats, config),
     ]

@@ -3,6 +3,6 @@ revision = 1
 requires-python = ">=3.11"
 
 [[package]]
-name = "youtrip-review"
+name = "fetch-review-stats"
 version = "0.1.0"
 source = { editable = "." }

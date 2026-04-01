@@ -87,29 +87,3 @@ def fetch_tickets(config: UserConfig, *, progress: bool = True) -> list[JiraTick
     return tickets
 
 
-def fetch_ticket_count(config: UserConfig) -> int:
-    """Quick count of matching tickets."""
-    exclude_clause = ""
-    if config.jira_exclude_projects:
-        projects = ", ".join(config.jira_exclude_projects)
-        exclude_clause = f" AND project NOT IN ({projects})"
-
-    jql = (
-        f"assignee = '{config.jira_username}'"
-        f" AND updated >= '{config.start_date.isoformat()}'"
-        f" AND updated <= '{config.end_date.isoformat()}'"
-        f"{exclude_clause}"
-    )
-
-    result = _run_acli(
-        ["jira", "workitem", "search", "--jql", jql, "--count"],
-        timeout=30,
-    )
-    # Parse "✓ Number of work items in the search: 213"
-    for line in result.splitlines():
-        if ":" in line:
-            try:
-                return int(line.rsplit(":", 1)[1].strip())
-            except ValueError:
-                continue
-    return 0

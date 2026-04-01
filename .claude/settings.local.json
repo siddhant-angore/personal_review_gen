@@ -4,7 +4,16 @@
       "Bash(uv --version)",
       "Bash(uv init:*)",
       "Bash(uv sync:*)",
-      "Bash(uv run:*)"
+      "Bash(uv run:*)",
+      "Bash(find /Users/siddhant.angore/Documents/GitHub/personal_review_gen/review_* -type f)",
+      "Bash(wc:*)",
+      "Bash(git -C /Users/siddhant.angore/Documents/GitHub/u-mobile log --author=siddhant --since=2025-04-01 --until=2026-03-31 --oneline --no-merges)",
+      "Bash(git -C /Users/siddhant.angore/Documents/GitHub/u-mobile log --author=siddhant --since=2025-04-01 --until=2026-04-01 --oneline --no-merges)",
+      "Bash(git -C /Users/siddhant.angore/Documents/GitHub/u-mobile log --all --author=siddhant --since=2025-04-01 --until=2026-04-01 --oneline --no-merges)",
+      "Bash(git -C /Users/siddhant.angore/Documents/GitHub/u-mobile branch --show-current)",
+      "Bash(git -C /Users/siddhant.angore/Documents/GitHub/u-mobile log --author=siddhant --since=2025-04-01 --until=2026-04-01 --shortstat --no-merges --format=)",
+      "Bash(git -C /Users/siddhant.angore/Documents/GitHub/u-mobile symbolic-ref refs/remotes/origin/HEAD)",
+      "Bash(git -C /Users/siddhant.angore/Documents/GitHub/fx_rate_fetcher_extension symbolic-ref refs/remotes/origin/HEAD)"
     ]
   }
 }

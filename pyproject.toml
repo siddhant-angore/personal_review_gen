@@ -1,12 +1,15 @@
 [project]
-name = "youtrip-review"
+name = "fetch-review-stats"
 version = "0.1.0"
-description = "Generate developer contribution reports from GitHub, JIRA, and git"
+description = "Generate developer contribution reports from GitHub & JIRA"
 requires-python = ">=3.11"
 dependencies = []
 
 [project.scripts]
-youtrip-review = "youtrip_review.cli:main"
+fetch-review-stats = "fetch_review_stats.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["fetch_review_stats"]
 
 [build-system]
 requires = ["hatchling"]
