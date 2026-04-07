@@ -264,7 +264,7 @@ def generate_markdown(data: ReviewData, config: UserConfig) -> str:
 def write_markdown(data: ReviewData, config: UserConfig) -> Path:
     """Generate and write the markdown file."""
     content = generate_markdown(data, config)
-    filename = f"review-{config.start_date.isoformat()}-to-{config.end_date.isoformat()}.md"
+    filename = f"review-{config.github_username}-{config.start_date.isoformat()}-to-{config.end_date.isoformat()}.md"
     path = Path(config.output_dir) / filename
     path.write_text(content)
     return path

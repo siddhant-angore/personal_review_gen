@@ -61,6 +61,16 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Skip fetching per-PR file changes (faster, skips package breakdown)",
     )
+    parser.add_argument(
+        "--github-user",
+        default=None,
+        help="Override GitHub username from config (fetch data for this user)",
+    )
+    parser.add_argument(
+        "--jira-user",
+        default=None,
+        help="Override JIRA username from config (fetch data for this user)",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -75,6 +85,12 @@ def _run(args: argparse.Namespace) -> int:
 
     # --- Load config ---
     config = load_config(args.config)
+
+    # --- Apply CLI user overrides ---
+    if args.github_user:
+        config.github_username = args.github_user
+    if args.jira_user:
+        config.jira_username = args.jira_user
 
     # --- Prerequisites ---
     print(dim("  Checking prerequisites..."))
@@ -95,7 +111,10 @@ def _run(args: argparse.Namespace) -> int:
 
     # --- Config echo ---
     print()
-    print(config_line("User", f"@{config.github_username}"))
+    user_display = f"@{config.github_username}"
+    if args.github_user:
+        user_display += f" {dim('(via --github-user)')}"
+    print(config_line("User", user_display))
     print(config_line("Repos", ", ".join(config.github_repos)))
     print(config_line("Period", f"{config.start_date} {purple('→')} {config.end_date}"))
     print(config_line("Output", config.output_dir))

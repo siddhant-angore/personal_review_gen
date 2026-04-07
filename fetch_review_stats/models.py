@@ -15,6 +15,7 @@ JIRA_CATEGORY_MAP: dict[str, str] = {
     "PT": "Cards & Transactions",
     "WASABI": "Core feature team I",
     "SESAME": "Core feature team II",
+    "YTH": "Thailand",
 }
 
 JIRA_DONE_STATUSES = frozenset({"Done", "Closed"})
